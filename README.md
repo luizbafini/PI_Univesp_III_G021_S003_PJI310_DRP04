@@ -1,0 +1,15 @@
+Instalar a versão 3.10 do Python
+
+Instalar a Biblioteca WebSockets
+pip install websockets
+
+Instalar a Biblioteca Mediapipe
+pip install opencv-python mediapipe websockets
+
+Comando pra rodar o eye_tracker_server (Observação: Rodar com o CMD como Administrador)
+python eye_tracker_server.py
+
+Depois que rodar o Python, e ver no CMD a mensagem:
+"Servidor WebSocket iniciado em ws://localhost:8765"
+
+Abrir o "ditavozes.html" no Navegador
