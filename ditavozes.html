@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comunicação Alternativa</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      background-color: #f5f5f5;
+      overflow: hidden;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      max-width: 1000px;
+      width: 100%;
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 18%;
+      max-width: 150px;
+      height: 25vh;
+      max-height: 150px;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: center;
+      background-color: #fff;
+      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 10px;
+      transition: background-color 0.3s, border 0.3s;
+    }
+    .card:hover {
+      background-color: #e0e0e0;
+    }
+    .card img {
+      width: 60px;
+      height: 60px;
+      margin-bottom: 10px;
+    }
+    .placeholder-card {
+      background-color: #ddd !important;
+      color: #007bff;
+      font-weight: bold;
+      border-radius: 50% !important;
+    }
+    #eye-cursor {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      background-color: blue;
+      border-radius: 50%;
+      pointer-events: none;
+      top: 50%;
+      left: 50px;
+      transform: translateY(-50%);
+      z-index: 1000;
+    }
+    #start-audio {
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      font-size: 18px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+<h1>Comunicação Alternativa</h1>
+<button id="start-audio">Ativar Áudio 🔊</button>
+<div class="container" id="card-container"></div>
+<div id="eye-cursor"></div>
+
+<script>
+    const phrases = [
+      { text: "Olá", image: "Ola" },
+      { text: "Eu quero", image: "Eu quero" },
+      { text: "Sim", image: "Sim" },
+      { text: "Não", image: "Nao" },
+	  { text: "Muito barulho", image: "Barulho" },
+      { text: "Estou com fome", image: "Estou com fome" },
+      { text: "Estou com sede", image: "Estou com sede" },
+	  { text: "Comunicação Alternativa", image: "placeholder" },
+      { text: "Preciso de ajuda", image: "Preciso de ajuda" },
+      { text: "Não entendi, pode explicar de novo?", image: "Nao_Entendi" },
+	  { text: "Estou feliz", image: "Estou feliz" },
+      { text: "Estou triste", image: "Estou triste" },
+      { text: "Estou cansado", image: "Estou cansado" },
+	  { text: "Quero ir ao banheiro", image: "Quero ir ao banheiro" }
+    ];
+
+    function speak(text, callback) {
+      if (text === "Comunicação Alternativa") {
+        if (callback) callback();
+        return;
+      }
+      const synth = window.speechSynthesis;
+      let voices = synth.getVoices();
+      if (!voices.length) {
+        synth.onvoiceschanged = () => {
+          voices = synth.getVoices();
+          speak(text, callback);
+        };
+        return;
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      const ptVoice = voices.find(voice => voice.lang.startsWith('pt'));
+      if (ptVoice) utterance.voice = ptVoice;
+      utterance.lang = "pt-BR";
+      if (callback) utterance.onend = callback;
+      synth.speak(utterance);
+    }
+
+    function createCard(phraseObj) {
+      const card = document.createElement("div");
+      card.className = "card";
+      if (phraseObj.text === "Comunicação Alternativa") {
+        card.classList.add("placeholder-card");
+      } else {
+        card.onclick = () => speak(phraseObj.text);
+      }
+
+      const img = document.createElement("img");
+      if (phraseObj.image !== "placeholder") {
+        img.src = `imagens/${encodeURIComponent(phraseObj.image)}.png`;
+        img.alt = phraseObj.text;
+        img.onerror = () => {
+          img.src = "https://via.placeholder.com/80?text=Imagem";
+        };
+        card.appendChild(img);
+      }
+
+      const text = document.createElement("span");
+      text.textContent = phraseObj.text;
+      card.appendChild(text);
+      return card;
+    }
+
+    function loadCards() {
+      const container = document.getElementById("card-container");
+      container.innerHTML = "";
+      phrases.forEach(phraseObj => {
+        const card = createCard(phraseObj);
+        container.appendChild(card);
+      });
+    }
+
+    function findCardByCoordinates(x, y) {
+      const cards = document.querySelectorAll('.card');
+      for (const card of cards) {
+        const rect = card.getBoundingClientRect();
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+          return card;
+        }
+      }
+      return null;
+    }
+
+  loadCards();
+
+  let selectedCard = null;
+  let selectionConfirmed = false;
+  const cursor = document.getElementById("eye-cursor");
+
+  let cursorX = window.innerWidth / 2;
+  let cursorY = window.innerHeight / 2;
+  let targetX = cursorX;
+  let targetY = cursorY;
+  let canSelect = true;
+
+  function animateCursor() {
+    cursorX += (targetX - cursorX) * 0.2;
+    cursorY += (targetY - cursorY) * 0.2;
+    cursor.style.left = `${cursorX}px`;
+    cursor.style.top = `${cursorY}px`;
+    requestAnimationFrame(animateCursor);
+  }
+
+  document.getElementById('start-audio').addEventListener('click', () => {
+    const utterance = new SpeechSynthesisUtterance('');
+    window.speechSynthesis.speak(utterance);
+    document.getElementById('start-audio').style.display = 'none';
+
+    animateCursor();
+
+    const socket = new WebSocket('ws://localhost:8765');
+
+    socket.addEventListener('message', function (event) {
+      if (event.data.includes(",")) {
+        const [x, y] = event.data.split(',').map(Number);
+        if (canSelect) {
+          targetX = (x / 640) * window.innerWidth;
+          targetY = (y / 480) * window.innerHeight;
+        }
+
+        const newCard = findCardByCoordinates(targetX, targetY);
+
+        if (canSelect && newCard !== selectedCard) {
+          if (selectedCard) selectedCard.style.border = "2px solid #ccc";
+          if (newCard) newCard.style.border = "4px solid red";
+          selectedCard = newCard;
+          selectionConfirmed = false;
+        }
+      } else if (event.data === "select" && selectedCard) {
+		  if (!selectionConfirmed && canSelect) {
+			const selectedText = selectedCard.querySelector('span').innerText;
+			if (selectedText === "Comunicação Alternativa") {
+			  selectedCard.style.border = "2px solid #ccc";
+			  selectedCard = null;
+			  selectionConfirmed = false;
+			  return; // Não faz nada se for o botão de Comunicação Alternativa
+			}
+			selectedCard.style.border = "4px solid green";
+			selectionConfirmed = true;
+			canSelect = false;
+			speak(selectedText, () => {
+			  selectedCard.style.border = "2px solid #ccc";
+			  selectedCard = null;
+			  selectionConfirmed = false;
+			  targetX = 50;
+			  targetY = window.innerHeight / 2;
+			  document.getElementById("eye-cursor").style.backgroundColor = "gray";
+			  setTimeout(() => {
+				canSelect = true;
+				document.getElementById("eye-cursor").style.backgroundColor = "blue";
+			  }, 1000);
+			});
+        }
+      }
+    });
+  });
+</script>
+</body>
+</html>
